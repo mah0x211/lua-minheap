@@ -106,7 +106,7 @@ function MinHeap:push( num, val )
     self.len = idx + 1;
     arr[idx] = node;
 
-    while idx > 1 do
+    while idx > 0 do
         local prev = rshift( idx - 1, 1 );
         local parent = arr[prev];
 
