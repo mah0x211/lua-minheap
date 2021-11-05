@@ -1,176 +1,164 @@
---[[
-
-  Copyright (C) 2017 Masatoshi Teruya
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-
-  lib/minheap.lua
-  lua-minheap
-
-  Created by Masatoshi Teruya on 17/03/01.
-
---]]
-
+--
+-- Copyright (C) 2017 Masatoshi Teruya
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+--
+-- lib/minheap.lua
+-- lua-minheap
+--
+-- Created by Masatoshi Teruya on 17/03/01.
+--
 --- modules
-local lshift = require("bit").lshift;
-local rshift = require("bit").rshift;
+local assert = assert
+local type = type
+local floor = math.floor
 
---- static functions
-
---- isLessThen
--- @param newNum
--- @param nodeNum
--- @return ok
-local function isLessThen( newNum, nodeNum )
-    return newNum < nodeNum;
-end
-
-
---- heapDown
--- @param arr
--- @param len
--- @param idx
-local function heapDown( arr, len, idx )
-    local node = arr[idx];
-    local hsize = rshift( len, 1 );
-
-    while idx < hsize do
-        local left = lshift( idx, 1 ) + 1;
-        local right = left + 1;
-        local child = arr[left];
-
-        if right < len then
-            if isLessThen( arr[right].num, child.num ) then
-                left = right;
-                child = arr[right];
-            end
-        end
-
-        if not isLessThen( child.num, node.num ) then
-            break;
-        end
-
-        child.idx = idx;
-        arr[idx] = child;
-        idx = left;
-    end
-
-    node.idx = idx;
-    arr[idx] = node;
-end
-
-
---- class MinHeap
-local MinHeap = {};
-
+--- @class MinHeap
+local MinHeap = {}
 
 --- isEmpty
--- @return ok
+--- @return boolean ok
 function MinHeap:isEmpty()
-    return self.len == 0;
+    return self.len == 0
 end
-
 
 --- peek
--- @return rootNode
+--- @return table? node
 function MinHeap:peek()
-    return self.arr[0];
+    return self.arr[1]
 end
 
+--- heapup
+--- @param arr table
+--- @param i integer
+local function heapup(arr, i)
+    local j = floor(i / 2)
+
+    while i > 1 and arr[i].pri < arr[j].pri do
+        arr[i].idx, arr[j].idx = arr[j].idx, arr[i].idx
+        arr[i], arr[j] = arr[j], arr[i]
+        i = j
+        j = floor(j / 2)
+    end
+end
 
 --- push
--- @param num
--- @param val
--- @return node
-function MinHeap:push( num, val )
-    local arr = self.arr;
-    local idx = self.len;
-    local node = { num = num, val = val, idx = idx };
+--- @param pri integer
+--- @param val any
+--- @return table node
+function MinHeap:push(pri, val)
+    assert(type(pri) == 'number', 'pri must be number')
+    local tail = self.len + 1
+    local node = {
+        pri = pri,
+        val = val,
+        idx = tail,
+    }
+    local arr = self.arr
 
-    self.len = idx + 1;
-    arr[idx] = node;
+    -- add the node to the end
+    arr[tail] = node
+    self.len = tail
+    heapup(arr, tail)
 
-    while idx > 0 do
-        local prev = rshift( idx - 1, 1 );
-        local parent = arr[prev];
-
-        if not isLessThen( num, parent.num ) then
-            break;
-        end
-
-        parent.idx = idx;
-        arr[idx] = parent;
-        idx = prev;
-    end
-
-    arr[idx] = node;
-    node.idx = idx;
-
-    return node;
+    return node
 end
-
 
 --- pop
--- @return rootNode
+--- @return table node
 function MinHeap:pop()
-    return self:del(0);
+    return self:del(1)
 end
 
+--- heapdown
+---@param arr table
+---@param len integer
+---@param idx integer
+---@return boolean
+local function heapdown(arr, len, idx)
+    local i = idx
+    local j = floor(i * 2)
 
---- del
--- @param idx
--- @return node
-function MinHeap:del( idx )
-    local arr = self.arr;
-    local node = arr[idx];
-
-    if node then
-        local len = self.len - 1;
-
-        if idx == len then
-            self.len = len;
-            arr[idx] = nil;
-        else
-            self.len = len;
-            arr[idx] = arr[len];
-            arr[len] = nil;
-            heapDown( arr, self.len, idx );
+    while j < len do
+        local right = j + 1
+        if right < len and arr[right].pri < arr[j].pri then
+            j = right
         end
+
+        if arr[i].pri <= arr[j].pri then
+            break
+        end
+
+        arr[i].idx, arr[j].idx = arr[j].idx, arr[i].idx
+        arr[i], arr[j] = arr[j], arr[i]
+        i = j
+        j = floor(j * 2)
     end
 
-    return node;
+    return i > idx
 end
 
+--- del
+--- @param idx integer
+--- @return table node
+function MinHeap:del(idx)
+    assert(type(idx) == 'number', 'i must be number')
+    local arr = self.arr
+    local node = arr[idx]
+
+    -- out of range
+    if not node then
+        return nil
+    end
+
+    local len = self.len
+    self.len = len - 1
+
+    -- delete tail
+    if idx == len then
+        arr[idx] = nil
+        return node
+    end
+
+    -- move the last node to the idx
+    arr[idx] = arr[len]
+    arr[idx].idx = idx
+    arr[len] = nil
+    if not heapdown(arr, len, idx) then
+        heapup(arr, idx)
+    end
+
+    return node
+end
 
 --- new
--- @return mheap
+--- @return MinHeap
 local function new()
     return setmetatable({
         arr = {},
-        len = 0
-    },{
-        __index = MinHeap
+        len = 0,
+    }, {
+        __index = MinHeap,
     })
 end
 
-
 return {
-    new = new
-};
+    new = new,
+}
 
