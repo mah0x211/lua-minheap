@@ -3,7 +3,6 @@ local sort = table.sort
 local floor = math.floor
 local random = math.random
 local minheap = require('minheap')
-local assert = require('assertex')
 local testcase = require('testcase')
 
 function testcase.new()
