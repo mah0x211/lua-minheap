@@ -1,7 +1,7 @@
 package = "minheap"
 version = "scm-1"
 source = {
-    url = "git://github.com/mah0x211/lua-minheap.git"
+    url = "git+https://github.com/mah0x211/lua-minheap.git"
 }
 description = {
     summary = "min-heap module",
